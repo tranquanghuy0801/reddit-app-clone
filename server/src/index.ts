@@ -17,19 +17,7 @@ const main = async () => {
   const orm = await MikroORM.init(microConfig);
   await orm.getMigrator().up();
 
-  const apolloServer = new ApolloServer({
-    schema: await buildSchema({
-      resolvers: [HelloResolver, PostResolver, UserResolver],
-      validate: false,
-    }),
-    context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
-  });
-
-  await apolloServer.start();
-
   const app = express();
-
-  apolloServer.applyMiddleware({ app });
 
   const RedisStore = connectRedis(session);
   const redisClient = redis.createClient();
@@ -52,6 +40,18 @@ const main = async () => {
       resave: false,
     })
   );
+
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [HelloResolver, PostResolver, UserResolver],
+      validate: false,
+    }),
+    context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
+  });
+
+  await apolloServer.start();
+
+  apolloServer.applyMiddleware({ app });
 
   app.listen(4000, () => {
     console.log("server started on localhost:4000");
